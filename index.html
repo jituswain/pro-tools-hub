@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pro Tools Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- FIXED LIBRARIES -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #e2e3e7;
+  color: white;
+}
+
+header {
+  text-align: center;
+  padding: 25px;
+  background: linear-gradient(135deg, #22c522, #16a332);
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.subtitle {
+  text-align: center;
+  color: #cbd5e1;
+  margin-bottom: 10px;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 25px;
+}
+
+.card {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 15px;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  background: #243244;
+}
+
+h3 {
+  color: #a42538;
+  margin-top: 0;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #c52225;
+  border: none;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #16a34a;
+  color: white;
+}
+
+.status {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #93c5fd;
+}
+
+footer {
+  text-align: center;
+  padding: 15px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+</style>
+</head>
+
+<body>
+
+<header>🚀 Pro Tools Hub</header>
+<div class="subtitle">Fast • Free • All-in-One Tools</div>
+<h1>Merge • Split • Compress • Convert — Fast & Free</h1>
+<div class="container">
+
+  <!-- IMAGE TO PDF -->
+  <div class="card">
+    <h3>📄 Image → PDF</h3>
+    <input type="file" id="pdfInput" multiple accept="image/*">
+    <button onclick="makePDF()">Convert PDF</button>
+    <div class="status" id="pdfStatus"></div>
+  </div>
+  <br> 
+   <br>
+  <!-- PDF TO IMAGES -->
+  <div class="card">
+    <h3>📄 PDF → Images</h3>
+    <input type="file" id="pdfToImg" accept="application/pdf">
+    <button onclick="pdfToImages()">Convert</button>
+    <div class="status" id="pdfImgStatus"></div>
+  </div>
+  <br> 
+
+  <!-- IMAGE COMPRESS -->
+  <div class="card">
+    <h3>🗜️ Image Compress</h3>
+    <input type="file" id="imgInput" accept="image/*">
+    <button onclick="compressImage()">Compress</button>
+    <div class="status" id="compStatus"></div>
+  </div>
+<br>
+  <!-- IMAGE RESIZE -->
+  <div class="card">
+    <h3>🖼️ Image Resize</h3>
+    <input type="file" id="resizeInput" accept="image/*">
+    <input type="number" id="width" placeholder="Width px">
+    <input type="number" id="height" placeholder="Height px">
+    <button onclick="resizeImage()">Resize</button>
+    <div class="status" id="resizeStatus"></div>
+  </div>
+
+</div>
+
+<!-- ABOUT -->
+<div style="padding:25px; background:#111827; margin-top:20px;">
+  <h2 style="color:#c5223b;">📌 About Us</h2>
+  <p style="color:#cbd5e1; line-height:1.6;">
+    Pro Tools Hub is a free online tools platform for PDF and image conversion.
+  </p>
+</div>
+
+<!-- PRIVACY -->
+<div style="padding:25px; background:#0b1220;">
+  <h2 style="color:#c52222;">🔐 Privacy Policy</h2>
+  <p style="color:#cbd5e1;">
+    All processing happens in browser. No files uploaded.
+  </p>
+</div>
+
+<footer>© 2026 Pro Tools Hub</footer>
+
+<script>
+const { jsPDF } = window.jspdf;
+
+/* FIX PDF.JS GLOBAL */
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+/* IMAGE → PDF */
+async function makePDF() {
+  const pdf = new jsPDF();
+  const files = document.getElementById('pdfInput').files;
+
+  if (!files.length) return alert("Select images");
+
+  for (let i = 0; i < files.length; i++) {
+    const img = await readFile(files[i]);
+    if (i > 0) pdf.addPage();
+    pdf.addImage(img, 'JPEG', 10, 10, 180, 160);
+  }
+
+  pdf.save("images.pdf");
+  document.getElementById("pdfStatus").innerText = "PDF created!";
+}
+
+/* PDF → IMAGES */
+async function pdfToImages() {
+  const file = document.getElementById("pdfToImg").files[0];
+  if (!file) return alert("Select PDF");
+
+  const reader = new FileReader();
+
+  reader.onload = async function() {
+    const typedarray = new Uint8Array(this.result);
+    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+
+    document.getElementById("pdfImgStatus").innerText =
+      "Pages: " + pdf.numPages;
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2 });
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL();
+      link.download = "page-" + i + ".png";
+      link.click();
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+/* IMAGE COMPRESS */
+function compressImage() {
+  const file = document.getElementById("imgInput").files[0];
+  if (!file) return alert("Select image");
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const img = new Image();
+    img.src = e.target.result;
+
+    img.onload = function() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      const scale = 0.7;
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const compressed = canvas.toDataURL("image/jpeg", 0.7);
+
+      const a = document.createElement("a");
+      a.href = compressed;
+      a.download = "compressed.jpg";
+      a.click();
+
+      document.getElementById("compStatus").innerText =
+        "Image compressed!";
+    };
+  };
+
+  reader.readAsDataURL(file);
+}
+
+/* IMAGE RESIZE */
+function resizeImage() {
+  const file = document.getElementById("resizeInput").files[0];
+  const w = document.getElementById("width").value;
+  const h = document.getElementById("height").value;
+
+  if (!file || !w || !h) return alert("Fill all fields");
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const img = new Image();
+    img.src = e.target.result;
+
+    img.onload = function() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = w;
+      canvas.height = h;
+
+      ctx.drawImage(img, 0, 0, w, h);
+
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL();
+      link.download = "resized.png";
+      link.click();
+
+      document.getElementById("resizeStatus").innerText =
+        "Image resized!";
+    };
+  };
+
+  reader.readAsDataURL(file);
+}
+
+/* helper */
+function readFile(file) {
+  return new Promise(res => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+</script>
+
+</body>
+</html>
